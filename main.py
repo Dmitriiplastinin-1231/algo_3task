@@ -173,7 +173,7 @@ def min_time_collect_apples(adj, root, has_apple):
 class TreeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Алгоритмы на дереве: DFS, DP, Centroid, HLD")
+        self.title("Алгоритмы на дереве и сбор яблок")
         self.geometry("1100x720")
         self.minsize(900, 600)
         self._build_ui()
@@ -634,7 +634,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Set higher limit to support depth near MAX_RECURSION_DEPTH; increase if RecursionError appears.
+    )  # Adjust MAX_RECURSION_DEPTH if RecursionError appears on deep trees.
     app = TreeApp()
     app.mainloop()
 
