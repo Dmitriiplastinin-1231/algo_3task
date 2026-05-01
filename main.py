@@ -333,7 +333,11 @@ class TreeApp(tk.Tk):
             return 0.1
 
     def _generate_tree(self):
-        n = int(self.size_var.get())
+        try:
+            n = int(self.size_var.get())
+        except (ValueError, tk.TclError):
+            messagebox.showerror("Ошибка", "Некорректный размер дерева.")
+            return None
         root = 0
         edges = []
         for node in range(1, n):
@@ -538,7 +542,10 @@ class TreeApp(tk.Tk):
                 or self.generated_size != size
                 or self.generated_percent != percent
             ):
-                n, adj, root, apple_nodes = self._generate_tree()
+                generated = self._generate_tree()
+                if not generated:
+                    return
+                n, adj, root, apple_nodes = generated
             else:
                 n = self.generated_size
                 adj = self.generated_adj
@@ -614,7 +621,7 @@ class TreeApp(tk.Tk):
                 edge_styles[edge] = {"color": "#c0392b", "width": 3}
             output_lines.append("Сбор яблок:")
             output_lines.append(f"Вершин: {n}")
-            percent_display = int(len(apple_nodes) * 100 / n) if n else 0
+            percent_display = int(len(apple_nodes) * 100 / n)
             output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
             output_lines.append(f"Минимальное время: {total_time}")
             apple_list = sorted(node + 1 for node in apple_nodes)
@@ -634,7 +641,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Adjust MAX_RECURSION_DEPTH if RecursionError appears on deep trees.
+    )  # Adjust MAX_RECURSION_DEPTH near the top if RecursionError appears on deep trees.
     app = TreeApp()
     app.mainloop()
 
