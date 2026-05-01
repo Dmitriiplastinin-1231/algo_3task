@@ -481,7 +481,7 @@ class TreeApp(tk.Tk):
 
 
 def main():
-    sys.setrecursionlimit(10000)  # DFS-based algorithms can be deep on tall trees.
+    sys.setrecursionlimit(10000)  # Supports deep trees; adjust if stack limits require.
     app = TreeApp()
     app.mainloop()
 
