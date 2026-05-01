@@ -106,7 +106,7 @@ class TreeApp(tk.Tk):
         self.algorithm_var = tk.StringVar(value="dfs")
         algo_frame = ttk.Frame(control_frame)
         algo_frame.grid(row=6, column=0, columnspan=2, sticky="w")
-        ttk.Radiobutton(algo_frame, text="Полный DFS с возвратом", variable=self.algorithm_var, value="dfs").grid(
+        ttk.Radiobutton(algo_frame, text="Полный обход DFS с возвратом", variable=self.algorithm_var, value="dfs").grid(
             row=0, column=0, sticky="w"
         )
         ttk.Radiobutton(algo_frame, text="DP на дереве", variable=self.algorithm_var, value="dp").grid(
@@ -504,7 +504,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Adjust MAX_RECURSION_DEPTH at the top if RecursionError appears (recursion depth limit).
+    )
     app = TreeApp()
     app.mainloop()
 
