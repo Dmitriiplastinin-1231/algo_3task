@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 MAX_RECURSION_DEPTH = 10000
+COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
 COLOR_SCALE_END = (255, 141, 82)
 CENTROID_PALETTE = ["#6ea8ff", "#7dd87d", "#ffd56e", "#f7a572", "#d69bf8", "#7ad1e8"]
@@ -358,7 +359,7 @@ class TreeApp(tk.Tk):
     @staticmethod
     def _color_scale(value, min_value, max_value, start=COLOR_SCALE_START, end=COLOR_SCALE_END):
         if max_value == min_value:
-            t = 0.5
+            t = COLOR_SCALE_MIDPOINT
         else:
             t = (value - min_value) / (max_value - min_value)
         r = int(start[0] + t * (end[0] - start[0]))
@@ -482,7 +483,9 @@ class TreeApp(tk.Tk):
 
 
 def main():
-    sys.setrecursionlimit(MAX_RECURSION_DEPTH)  # Increase if RecursionError appears on deep trees; lower if stack is limited.
+    sys.setrecursionlimit(
+        MAX_RECURSION_DEPTH
+    )  # Increase if RecursionError appears; default supports depth near MAX_RECURSION_DEPTH.
     app = TreeApp()
     app.mainloop()
 
