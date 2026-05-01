@@ -2,7 +2,7 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-MAX_RECURSION_DEPTH = 10000
+MAX_RECURSION_DEPTH = 10000  # Supports recursion on trees with depth close to this value.
 COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
 COLOR_SCALE_END = (255, 141, 82)
@@ -11,6 +11,9 @@ EDGE_BASE_COLOR = "#b0b0b0"
 EDGE_HLD_HEAVY_COLOR = "#f39c12"
 NODE_DEFAULT_COLOR = "#6ea8ff"
 NODE_OUTLINE_COLOR = "#3d3d3d"
+CANVAS_MARGIN = 50
+NODE_RADIUS = 16
+MIN_SCALE_DIVISOR = 1.0
 
 
 def dfs_with_return(adj, root):
@@ -196,7 +199,9 @@ class TreeApp(tk.Tk):
         self.edges_text.grid(row=0, column=0, sticky="nsew")
         scrollbar = ttk.Scrollbar(edges_frame, orient="vertical", command=self.edges_text.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-        self.edges_text.configure(yscrollcommand=scrollbar.set)
+        scrollbar_x = ttk.Scrollbar(edges_frame, orient="horizontal", command=self.edges_text.xview)
+        scrollbar_x.grid(row=1, column=0, sticky="ew")
+        self.edges_text.configure(yscrollcommand=scrollbar.set, xscrollcommand=scrollbar_x.set)
 
         ttk.Label(control_frame, text="Алгоритм:").grid(row=5, column=0, columnspan=2, sticky="w", pady=(12, 4))
         self.algorithm_var = tk.StringVar(value="dfs")
@@ -375,9 +380,9 @@ class TreeApp(tk.Tk):
 
         x_raw, y_raw, max_depth = self._compute_layout(adj, root)
         min_x, max_x = min(x_raw), max(x_raw)
-        margin = 50
-        scale_x = (width - 2 * margin) / max(1.0, (max_x - min_x))
-        scale_y = (height - 2 * margin) / max(1.0, max_depth)
+        margin = CANVAS_MARGIN
+        scale_x = (width - 2 * margin) / max(MIN_SCALE_DIVISOR, (max_x - min_x))
+        scale_y = (height - 2 * margin) / max(MIN_SCALE_DIVISOR, max_depth)
 
         def sx(idx):
             return margin + (x_raw[idx] - min_x) * scale_x
@@ -395,7 +400,7 @@ class TreeApp(tk.Tk):
                 width_line = style.get("width", 2)
                 self.canvas.create_line(sx(u), sy(u), sx(v), sy(v), fill=color, width=width_line)
 
-        radius = 16
+        radius = NODE_RADIUS
         for node in range(n):
             cx, cy = sx(node), sy(node)
             color = node_colors.get(node, NODE_DEFAULT_COLOR)
