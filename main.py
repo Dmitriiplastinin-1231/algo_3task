@@ -44,32 +44,31 @@ def dfs_with_return(adj, root):
     return tin, tout, tour
 
 
-def tree_dp(adj, root):
+def tree_dp(adj, root, has_apple):
     n = len(adj)
     parent = [-1] * n
-    depth = [0] * n
-    order = []
-    stack = [root]
+    order = [root]
     parent[root] = root
-    while stack:
-        node = stack.pop()
-        order.append(node)
+    for node in order:
         for nei in adj[node]:
             if nei == parent[node]:
                 continue
             parent[nei] = node
-            depth[nei] = depth[node] + 1
-            stack.append(nei)
+            order.append(nei)
 
-    size = [1] * n
-    max_depth = [0] * n
+    apple_count = [0] * n
+    edges_needed = set()
     for node in reversed(order):
+        count = 1 if has_apple[node] else 0
         for nei in adj[node]:
             if nei == parent[node]:
                 continue
-            size[node] += size[nei]
-            max_depth[node] = max(max_depth[node], max_depth[nei] + 1)
-    return size, depth, max_depth
+            count += apple_count[nei]
+            if apple_count[nei] > 0:
+                edges_needed.add(frozenset((node, nei)))
+        apple_count[node] = count
+
+    return len(edges_needed) * 2, edges_needed, apple_count
 
 
 def centroid_decomposition(adj, start):
@@ -170,10 +169,27 @@ def min_time_collect_apples(adj, root, has_apple):
     return len(edges_needed) * 2, edges_needed
 
 
+def build_collect_route(adj, root, edges_needed):
+    route = []
+
+    def dfs(node, parent):
+        route.append(node)
+        for nei in adj[node]:
+            if nei == parent:
+                continue
+            if frozenset((node, nei)) not in edges_needed:
+                continue
+            dfs(nei, node)
+            route.append(node)
+
+    dfs(root, -1)
+    return route
+
+
 class TreeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Алгоритмы на дереве и сбор яблок")
+        self.title("Алгоритмы маршрута для сбора яблок")
         self.geometry("1100x720")
         self.minsize(900, 600)
         self._build_ui()
@@ -246,11 +262,7 @@ class TreeApp(tk.Tk):
         ttk.Radiobutton(algo_frame, text="Heavy-Light Decomposition", variable=self.algorithm_var, value="hld").grid(
             row=3, column=0, sticky="w"
         )
-        ttk.Radiobutton(algo_frame, text="Сбор яблок (минимальное время)", variable=self.algorithm_var, value="apples").grid(
-            row=4, column=0, sticky="w"
-        )
-
-        apples_frame = ttk.LabelFrame(control_frame, text="Сбор яблок", padding=8)
+        apples_frame = ttk.LabelFrame(control_frame, text="Параметры яблок", padding=8)
         apples_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(12, 6))
         apples_frame.columnconfigure(0, weight=1)
         apples_frame.columnconfigure(1, weight=0)
@@ -300,7 +312,7 @@ class TreeApp(tk.Tk):
         self.canvas.grid(row=0, column=0, sticky="nsew")
         ttk.Label(
             canvas_frame,
-            text="Визуализация: цвет узлов/рёбер отражает выбранный алгоритм",
+            text="Визуализация: маршрут сбора яблок и выбранный алгоритм",
             foreground="#555",
         ).grid(row=1, column=0, sticky="w", pady=(6, 0))
 
@@ -331,6 +343,27 @@ class TreeApp(tk.Tk):
             return int(self.apple_percent_var.get().replace("%", "")) / 100
         except ValueError:
             return 0.1
+
+    def _ensure_apples(self, n, adj, root):
+        percent = self._apple_percent_value()
+        if (
+            self.generated_adj is not None
+            and self.generated_root == root
+            and self.generated_percent == percent
+            and self.generated_adj == adj
+        ):
+            return self.generated_apples
+
+        apple_count = max(1, int(n * percent))
+        apple_nodes = set(random.sample(range(n), apple_count))
+
+        self.generated_adj = [neighbors[:] for neighbors in adj]
+        self.generated_root = root
+        self.generated_apples = apple_nodes
+        self.generated_size = n
+        self.generated_percent = percent
+
+        return apple_nodes
 
     def _generate_tree(self):
         try:
@@ -533,29 +566,13 @@ class TreeApp(tk.Tk):
 
     def _run(self):
         algorithm = self.algorithm_var.get()
-        apple_nodes = set()
-        if algorithm == "apples":
-            percent = self._apple_percent_value()
-            size = int(self.size_var.get())
-            if (
-                self.generated_adj is None
-                or self.generated_size != size
-                or self.generated_percent != percent
-            ):
-                generated = self._generate_tree()
-                if not generated:
-                    return
-                n, adj, root, apple_nodes = generated
-            else:
-                n = self.generated_size
-                adj = self.generated_adj
-                root = self.generated_root
-                apple_nodes = self.generated_apples
-        else:
-            parsed = self._parse_input()
-            if not parsed:
-                return
-            n, adj, root = parsed
+        parsed = self._parse_input()
+        if not parsed:
+            return
+        n, adj, root = parsed
+
+        apple_nodes = self._ensure_apples(n, adj, root)
+        has_apple = [node in apple_nodes for node in range(n)]
 
         node_colors = {}
         extra_labels = {}
@@ -563,76 +580,66 @@ class TreeApp(tk.Tk):
         output_lines = []
 
         if algorithm == "dfs":
-            tin, tout, tour = dfs_with_return(adj, root)
-            min_t, max_t = min(tin), max(tin)
+            total_time, edges_needed = min_time_collect_apples(adj, root, has_apple)
+            route = build_collect_route(adj, root, edges_needed)
             for node in range(n):
-                node_colors[node] = self._color_scale(tin[node], min_t, max_t)
-                extra_labels[node] = f"{tin[node]}/{tout[node]}"
-            output_lines.append("DFS с возвратом (Эйлеров обход):")
-            output_lines.append("Путь: " + " ".join(str(v + 1) for v in tour))
-            output_lines.append("tin: " + " ".join(str(t) for t in tin))
-            output_lines.append("tout: " + " ".join(str(t) for t in tout))
+                node_colors[node] = OTHER_NODE_COLOR
+            output_lines.append("DFS с возвратом (сбор яблок):")
         elif algorithm == "dp":
-            size, depth, max_depth = tree_dp(adj, root)
-            min_s, max_s = min(size), max(size)
+            total_time, edges_needed, apple_count = tree_dp(adj, root, has_apple)
+            route = build_collect_route(adj, root, edges_needed)
+            min_c, max_c = min(apple_count), max(apple_count)
             for node in range(n):
-                node_colors[node] = self._color_scale(size[node], min_s, max_s)
-                extra_labels[node] = f"s={size[node]}"
-            output_lines.append("DP на дереве:")
-            output_lines.append("subtree_size: " + " ".join(str(s) for s in size))
-            output_lines.append("depth: " + " ".join(str(d) for d in depth))
-            output_lines.append("max_depth_in_subtree: " + " ".join(str(d) for d in max_depth))
+                node_colors[node] = self._color_scale(apple_count[node], min_c, max_c)
+                extra_labels[node] = f"a={apple_count[node]}"
+            output_lines.append("DP на дереве (сбор яблок):")
         elif algorithm == "centroid":
-            parent, level = centroid_decomposition(adj, root)
+            _parent, level = centroid_decomposition(adj, root)
+            total_time, edges_needed, _ = tree_dp(adj, root, has_apple)
+            route = build_collect_route(adj, root, edges_needed)
             for node in range(n):
                 node_colors[node] = CENTROID_PALETTE[level[node] % len(CENTROID_PALETTE)]
-                extra_labels[node] = f"lvl {level[node]}"
-            output_lines.append("Центроидная декомпозиция:")
-            output_lines.append("centroid_parent: " + " ".join(str(p + 1 if p != -1 else 0) for p in parent))
-            output_lines.append("level: " + " ".join(str(l) for l in level))
+            output_lines.append("Центроидная декомпозиция (сбор яблок):")
         elif algorithm == "hld":
-            parent, heavy, head, pos, depth = heavy_light_decomposition(adj, root)
+            _parent, heavy, head, _pos, _depth = heavy_light_decomposition(adj, root)
+            total_time, edges_needed, _ = tree_dp(adj, root, has_apple)
+            route = build_collect_route(adj, root, edges_needed)
             heads = sorted(set(head))
             head_index = {h: i for i, h in enumerate(heads)}
             for node in range(n):
                 node_colors[node] = self._color_scale(head_index[head[node]], 0, max(1, len(heads) - 1))
-                extra_labels[node] = f"h{head[node] + 1}"
             for node in range(n):
                 if heavy[node] != -1:
-                    edge_styles[frozenset((node, heavy[node]))] = {"color": EDGE_HLD_HEAVY_COLOR, "width": 4}
-            output_lines.append("Heavy-Light Decomposition:")
-            output_lines.append("parent: " + " ".join(str(p + 1 if p != -1 else 0) for p in parent))
-            output_lines.append("heavy_child: " + " ".join(str(h + 1 if h != -1 else 0) for h in heavy))
-            output_lines.append("head: " + " ".join(str(h + 1) for h in head))
-            output_lines.append("pos: " + " ".join(str(p) for p in pos))
-            output_lines.append("depth: " + " ".join(str(d) for d in depth))
-        elif algorithm == "apples":
-            has_apple = [node in apple_nodes for node in range(n)]
-            total_time, edges_needed = min_time_collect_apples(adj, root, has_apple)
-            for node in range(n):
-                if node == root:
-                    node_colors[node] = ROOT_COLOR
-                elif has_apple[node]:
-                    node_colors[node] = APPLE_COLOR
-                    extra_labels[node] = "🍎"
-                else:
-                    node_colors[node] = OTHER_NODE_COLOR
-            for edge in edges_needed:
-                edge_styles[edge] = {"color": "#c0392b", "width": 3}
-            output_lines.append("Сбор яблок:")
-            output_lines.append(f"Вершин: {n}")
-            percent_display = int(len(apple_nodes) * 100 / n)
-            output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
-            output_lines.append(f"Минимальное время: {total_time}")
-            apple_list = sorted(node + 1 for node in apple_nodes)
-            if len(apple_list) <= 20:
-                output_lines.append("Вершины с яблоками: " + " ".join(map(str, apple_list)))
-            else:
-                preview = " ".join(map(str, apple_list[:20]))
-                output_lines.append(f"Вершины с яблоками: {preview} ...")
+                    edge_styles.setdefault(
+                        frozenset((node, heavy[node])), {"color": EDGE_HLD_HEAVY_COLOR, "width": 4}
+                    )
+            output_lines.append("Heavy-Light Decomposition (сбор яблок):")
         else:
             messagebox.showerror("Ошибка", "Неизвестный алгоритм.")
             return
+
+        for edge in edges_needed:
+            edge_styles[edge] = {"color": "#c0392b", "width": 3}
+
+        for node in range(n):
+            if node == root:
+                node_colors[node] = ROOT_COLOR
+                extra_labels[node] = "старт"
+            elif has_apple[node]:
+                node_colors[node] = APPLE_COLOR
+                extra_labels[node] = "🍎"
+
+        output_lines.append(f"Вершин: {n}")
+        percent_display = int(len(apple_nodes) * 100 / n)
+        output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
+        output_lines.append(f"Минимальное время: {total_time}")
+        output_lines.append("Маршрут: " + " ".join(str(v + 1) for v in route))
+        apple_list = sorted(node + 1 for node in apple_nodes)
+        if len(apple_list) <= 20:
+            output_lines.append("Вершины с яблоками: " + " ".join(map(str, apple_list)))
+        else:
+            preview = " ".join(map(str, apple_list[:20]))
+            output_lines.append(f"Вершины с яблоками: {preview} ...")
 
         self._draw(adj, root, node_colors, extra_labels, edge_styles)
         self._set_output(output_lines)
