@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-MAX_RECURSION_DEPTH = 10000  # Supports recursion on trees with depth close to this value.
+MAX_RECURSION_DEPTH = 10000  # Supports trees with depth roughly up to this value; actual limit depends on recursion patterns.
 COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
 COLOR_SCALE_END = (255, 141, 82)
@@ -648,7 +648,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Adjust the MAX_RECURSION_DEPTH constant at the top if RecursionError appears on deep trees.
+    )  # Adjust MAX_RECURSION_DEPTH at the top if RecursionError appears on deep trees.
     app = TreeApp()
     app.mainloop()
 
