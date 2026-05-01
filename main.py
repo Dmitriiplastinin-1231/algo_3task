@@ -481,7 +481,7 @@ class TreeApp(tk.Tk):
 
 
 def main():
-    sys.setrecursionlimit(10000)  # Supports deep trees; adjust if stack limits require.
+    sys.setrecursionlimit(10000)  # Increase if RecursionError appears on deep trees; lower if stack is limited.
     app = TreeApp()
     app.mainloop()
 
