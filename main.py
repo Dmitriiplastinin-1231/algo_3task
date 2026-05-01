@@ -346,7 +346,7 @@ class TreeApp(tk.Tk):
             adj[v].append(u)
 
         percent = self._apple_percent_value()
-        apple_count = max(1, int(round(n * percent)))
+        apple_count = max(1, int(n * percent))
         apple_nodes = set(random.sample(range(n), apple_count))
 
         self.generated_adj = adj
@@ -614,7 +614,8 @@ class TreeApp(tk.Tk):
                 edge_styles[edge] = {"color": "#c0392b", "width": 3}
             output_lines.append("Сбор яблок:")
             output_lines.append(f"Вершин: {n}")
-            output_lines.append(f"Яблок: {len(apple_nodes)} ({int(self.generated_percent * 100)}%)")
+            percent_display = int(len(apple_nodes) * 100 / n) if n else 0
+            output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
             output_lines.append(f"Минимальное время: {total_time}")
             apple_list = sorted(node + 1 for node in apple_nodes)
             if len(apple_list) <= 20:
