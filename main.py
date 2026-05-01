@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-MAX_RECURSION_DEPTH = 10000  # Supports trees with depth roughly up to this value; actual limit depends on recursion patterns.
+MAX_RECURSION_DEPTH = 10000  # Python recursion call-depth limit; deep traversals may require higher values.
 COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
 COLOR_SCALE_END = (255, 141, 82)
@@ -189,7 +189,7 @@ def build_collect_route(adj, root, edges_needed):
 class TreeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Алгоритмы маршрута для сбора яблок")
+        self.title("Алгоритмы маршрутов для сбора яблок")
         self.geometry("1100x720")
         self.minsize(900, 600)
         self._build_ui()
@@ -648,7 +648,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Adjust MAX_RECURSION_DEPTH at the top if RecursionError appears on deep trees.
+    )  # Adjust MAX_RECURSION_DEPTH at the top if RecursionError appears (recursion depth limit).
     app = TreeApp()
     app.mainloop()
 
