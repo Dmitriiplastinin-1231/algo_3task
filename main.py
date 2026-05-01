@@ -1,3 +1,4 @@
+import random
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -14,6 +15,9 @@ NODE_OUTLINE_COLOR = "#3d3d3d"
 CANVAS_MARGIN = 50
 NODE_RADIUS = 16
 MIN_SCALE_DIVISOR = 1.0
+APPLE_COLOR = "#e74c3c"
+ROOT_COLOR = "#2ecc71"
+OTHER_NODE_COLOR = "#c7d3e8"
 
 
 def dfs_with_return(adj, root):
@@ -148,6 +152,24 @@ def heavy_light_decomposition(adj, root):
     return parent, heavy, head, pos, depth
 
 
+def min_time_collect_apples(adj, root, has_apple):
+    edges_needed = set()
+
+    def dfs(node, parent):
+        contains = has_apple[node]
+        for nei in adj[node]:
+            if nei == parent:
+                continue
+            child_contains = dfs(nei, node)
+            if child_contains:
+                edges_needed.add(frozenset((node, nei)))
+                contains = True
+        return contains
+
+    dfs(root, -1)
+    return len(edges_needed) * 2, edges_needed
+
+
 class TreeApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -155,6 +177,11 @@ class TreeApp(tk.Tk):
         self.geometry("1100x720")
         self.minsize(900, 600)
         self._build_ui()
+        self.generated_adj = None
+        self.generated_root = 0
+        self.generated_apples = set()
+        self.generated_size = None
+        self.generated_percent = None
         self._load_sample()
 
     def _build_ui(self):
@@ -219,16 +246,55 @@ class TreeApp(tk.Tk):
         ttk.Radiobutton(algo_frame, text="Heavy-Light Decomposition", variable=self.algorithm_var, value="hld").grid(
             row=3, column=0, sticky="w"
         )
+        ttk.Radiobutton(algo_frame, text="Сбор яблок (минимальное время)", variable=self.algorithm_var, value="apples").grid(
+            row=4, column=0, sticky="w"
+        )
+
+        apples_frame = ttk.LabelFrame(control_frame, text="Сбор яблок", padding=8)
+        apples_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(12, 6))
+        apples_frame.columnconfigure(0, weight=1)
+        apples_frame.columnconfigure(1, weight=0)
+
+        ttk.Label(apples_frame, text="Размер дерева:").grid(row=0, column=0, sticky="w")
+        self.size_var = tk.IntVar(value=100)
+        self.size_value_label = ttk.Label(apples_frame, text=str(self.size_var.get()))
+        self.size_value_label.grid(row=0, column=1, sticky="e")
+        self.size_scale = tk.Scale(
+            apples_frame,
+            from_=10,
+            to=1000,
+            resolution=10,
+            orient="horizontal",
+            showvalue=False,
+            variable=self.size_var,
+            command=self._update_size_label,
+            length=180,
+        )
+        self.size_scale.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(4, 8))
+
+        ttk.Label(apples_frame, text="Доля яблок:").grid(row=2, column=0, sticky="w")
+        self.apple_percent_var = tk.StringVar(value="10%")
+        ttk.Combobox(
+            apples_frame,
+            textvariable=self.apple_percent_var,
+            values=["10%", "30%", "50%"],
+            state="readonly",
+            width=6,
+        ).grid(row=2, column=1, sticky="e")
+
+        ttk.Button(apples_frame, text="Сгенерировать дерево", command=self._generate_tree).grid(
+            row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0)
+        )
 
         button_frame = ttk.Frame(control_frame)
-        button_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(12, 6))
+        button_frame.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(6, 6))
         button_frame.columnconfigure(0, weight=1)
         ttk.Button(button_frame, text="Загрузить пример", command=self._load_sample).grid(row=0, column=0, sticky="ew")
         ttk.Button(button_frame, text="Запустить", command=self._run).grid(row=1, column=0, sticky="ew", pady=(6, 0))
 
-        ttk.Label(control_frame, text="Результаты:").grid(row=8, column=0, columnspan=2, sticky="w", pady=(12, 4))
+        ttk.Label(control_frame, text="Результаты:").grid(row=9, column=0, columnspan=2, sticky="w", pady=(12, 4))
         self.output_text = tk.Text(control_frame, width=32, height=14, wrap="word", state="disabled")
-        self.output_text.grid(row=9, column=0, columnspan=2, sticky="nsew")
+        self.output_text.grid(row=10, column=0, columnspan=2, sticky="nsew")
 
         self.canvas = tk.Canvas(canvas_frame, background="white", highlightthickness=1, highlightbackground="#d0d0d0")
         self.canvas.grid(row=0, column=0, sticky="nsew")
@@ -256,6 +322,44 @@ class TreeApp(tk.Tk):
         self.edges_text.delete("1.0", tk.END)
         self.edges_text.insert(tk.END, sample_edges)
         self._run()
+
+    def _update_size_label(self, value):
+        self.size_value_label.configure(text=str(int(float(value))))
+
+    def _apple_percent_value(self):
+        try:
+            return int(self.apple_percent_var.get().replace("%", "")) / 100
+        except ValueError:
+            return 0.1
+
+    def _generate_tree(self):
+        n = int(self.size_var.get())
+        root = 0
+        edges = []
+        for node in range(1, n):
+            parent = random.randrange(0, node)
+            edges.append((parent, node))
+
+        adj = [[] for _ in range(n)]
+        for u, v in edges:
+            adj[u].append(v)
+            adj[v].append(u)
+
+        percent = self._apple_percent_value()
+        apple_count = max(1, int(round(n * percent)))
+        apple_nodes = set(random.sample(range(n), apple_count))
+
+        self.generated_adj = adj
+        self.generated_root = root
+        self.generated_apples = apple_nodes
+        self.generated_size = n
+        self.generated_percent = percent
+
+        self.nodes_var.set(str(n))
+        self.root_var.set(str(root + 1))
+        self.edges_text.delete("1.0", tk.END)
+        self.edges_text.insert(tk.END, "\n".join(f"{u + 1} {v + 1}" for u, v in edges))
+        return n, adj, root, apple_nodes
 
     def _parse_input(self):
         try:
@@ -424,11 +528,27 @@ class TreeApp(tk.Tk):
         self.output_text.configure(state="disabled")
 
     def _run(self):
-        parsed = self._parse_input()
-        if not parsed:
-            return
-        n, adj, root = parsed
         algorithm = self.algorithm_var.get()
+        apple_nodes = set()
+        if algorithm == "apples":
+            percent = self._apple_percent_value()
+            size = int(self.size_var.get())
+            if (
+                self.generated_adj is None
+                or self.generated_size != size
+                or self.generated_percent != percent
+            ):
+                n, adj, root, apple_nodes = self._generate_tree()
+            else:
+                n = self.generated_size
+                adj = self.generated_adj
+                root = self.generated_root
+                apple_nodes = self.generated_apples
+        else:
+            parsed = self._parse_input()
+            if not parsed:
+                return
+            n, adj, root = parsed
 
         node_colors = {}
         extra_labels = {}
@@ -479,6 +599,29 @@ class TreeApp(tk.Tk):
             output_lines.append("head: " + " ".join(str(h + 1) for h in head))
             output_lines.append("pos: " + " ".join(str(p) for p in pos))
             output_lines.append("depth: " + " ".join(str(d) for d in depth))
+        elif algorithm == "apples":
+            has_apple = [node in apple_nodes for node in range(n)]
+            total_time, edges_needed = min_time_collect_apples(adj, root, has_apple)
+            for node in range(n):
+                if node == root:
+                    node_colors[node] = ROOT_COLOR
+                elif has_apple[node]:
+                    node_colors[node] = APPLE_COLOR
+                    extra_labels[node] = "🍎"
+                else:
+                    node_colors[node] = OTHER_NODE_COLOR
+            for edge in edges_needed:
+                edge_styles[edge] = {"color": "#c0392b", "width": 3}
+            output_lines.append("Сбор яблок:")
+            output_lines.append(f"Вершин: {n}")
+            output_lines.append(f"Яблок: {len(apple_nodes)} ({int(self.generated_percent * 100)}%)")
+            output_lines.append(f"Минимальное время: {total_time}")
+            apple_list = sorted(node + 1 for node in apple_nodes)
+            if len(apple_list) <= 20:
+                output_lines.append("Вершины с яблоками: " + " ".join(map(str, apple_list)))
+            else:
+                preview = " ".join(map(str, apple_list[:20]))
+                output_lines.append(f"Вершины с яблоками: {preview} ...")
         else:
             messagebox.showerror("Ошибка", "Неизвестный алгоритм.")
             return
