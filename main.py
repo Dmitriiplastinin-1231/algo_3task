@@ -485,7 +485,7 @@ class TreeApp(tk.Tk):
 def main():
     sys.setrecursionlimit(
         MAX_RECURSION_DEPTH
-    )  # Increase if RecursionError appears; default supports depth near MAX_RECURSION_DEPTH.
+    )  # Set higher limit to support depth near MAX_RECURSION_DEPTH; increase if RecursionError appears.
     app = TreeApp()
     app.mainloop()
 
