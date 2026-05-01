@@ -439,15 +439,18 @@ class TreeApp(tk.Tk):
         edge_styles = {}
         output_lines = []
 
-        start_time = time.perf_counter()
         if algorithm == "dfs":
+            start_time = time.perf_counter()
             total_time, edges_needed = min_time_collect_apples(adj, root, has_apple)
+            elapsed = time.perf_counter() - start_time
             route = build_collect_route(adj, root, edges_needed)
             for node in range(n):
                 node_colors[node] = OTHER_NODE_COLOR
             output_lines.append("DFS с возвратом (сбор яблок):")
         elif algorithm == "dp":
+            start_time = time.perf_counter()
             total_time, edges_needed, apple_count = tree_dp(adj, root, has_apple)
+            elapsed = time.perf_counter() - start_time
             route = build_collect_route(adj, root, edges_needed)
             min_c, max_c = min(apple_count), max(apple_count)
             for node in range(n):
@@ -455,15 +458,19 @@ class TreeApp(tk.Tk):
                 extra_labels[node] = f"a={apple_count[node]}"
             output_lines.append("DP на дереве (сбор яблок):")
         elif algorithm == "centroid":
+            start_time = time.perf_counter()
             _parent, level = centroid_decomposition(adj, root)
             total_time, edges_needed, _ = tree_dp(adj, root, has_apple)
+            elapsed = time.perf_counter() - start_time
             route = build_collect_route(adj, root, edges_needed)
             for node in range(n):
                 node_colors[node] = CENTROID_PALETTE[level[node] % len(CENTROID_PALETTE)]
             output_lines.append("Центроидная декомпозиция (сбор яблок):")
         elif algorithm == "hld":
+            start_time = time.perf_counter()
             _parent, heavy, head, _pos, _depth = heavy_light_decomposition(adj, root)
             total_time, edges_needed, _ = tree_dp(adj, root, has_apple)
+            elapsed = time.perf_counter() - start_time
             route = build_collect_route(adj, root, edges_needed)
             heads = sorted(set(head))
             head_index = {h: i for i, h in enumerate(heads)}
@@ -478,7 +485,6 @@ class TreeApp(tk.Tk):
         else:
             messagebox.showerror("Ошибка", "Неизвестный алгоритм.")
             return
-        elapsed = time.perf_counter() - start_time
 
         for edge in edges_needed:
             edge_styles[edge] = {"color": "#c0392b", "width": 3}
