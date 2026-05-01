@@ -112,8 +112,6 @@ class TreeApp(tk.Tk):
             variable=self.algorithm_var,
             value="dfs",
         ).grid(row=0, column=0, sticky="w")
-            row=0, column=0, sticky="w"
-        )
         ttk.Radiobutton(algo_frame, text="DP на дереве", variable=self.algorithm_var, value="dp").grid(
             row=1, column=0, sticky="w"
         )
