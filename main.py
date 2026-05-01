@@ -1,5 +1,6 @@
 import random
 import sys
+import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -438,6 +439,7 @@ class TreeApp(tk.Tk):
         edge_styles = {}
         output_lines = []
 
+        start_time = time.perf_counter()
         if algorithm == "dfs":
             total_time, edges_needed = min_time_collect_apples(adj, root, has_apple)
             route = build_collect_route(adj, root, edges_needed)
@@ -476,6 +478,7 @@ class TreeApp(tk.Tk):
         else:
             messagebox.showerror("Ошибка", "Неизвестный алгоритм.")
             return
+        elapsed = time.perf_counter() - start_time
 
         for edge in edges_needed:
             edge_styles[edge] = {"color": "#c0392b", "width": 3}
@@ -492,6 +495,7 @@ class TreeApp(tk.Tk):
         percent_display = int(len(apple_nodes) * 100 / n)
         output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
         output_lines.append(f"Минимальное время: {total_time}")
+        output_lines.append(f"Время выполнения: {elapsed:.6f} сек")
         output_lines.append("Маршрут: " + " ".join(str(v + 1) for v in route))
         apple_list = sorted(node + 1 for node in apple_nodes)
         if len(apple_list) <= 20:
