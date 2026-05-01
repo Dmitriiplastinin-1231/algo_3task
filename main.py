@@ -1,7 +1,14 @@
-import math
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
+
+COLOR_SCALE_START = (82, 148, 255)
+COLOR_SCALE_END = (255, 141, 82)
+CENTROID_PALETTE = ["#6ea8ff", "#7dd87d", "#ffd56e", "#f7a572", "#d69bf8", "#7ad1e8"]
+EDGE_BASE_COLOR = "#b0b0b0"
+EDGE_HLD_HEAVY_COLOR = "#f39c12"
+NODE_DEFAULT_COLOR = "#6ea8ff"
+NODE_OUTLINE_COLOR = "#3d3d3d"
 
 
 def dfs_with_return(adj, root):
@@ -348,7 +355,7 @@ class TreeApp(tk.Tk):
         return x, y, max_depth
 
     @staticmethod
-    def _color_scale(value, min_value, max_value, start=(82, 148, 255), end=(255, 141, 82)):
+    def _color_scale(value, min_value, max_value, start=COLOR_SCALE_START, end=COLOR_SCALE_END):
         if max_value == min_value:
             t = 0.5
         else:
@@ -382,15 +389,22 @@ class TreeApp(tk.Tk):
                 if v < u:
                     continue
                 style = edge_styles.get(frozenset((u, v)), {})
-                color = style.get("color", "#b0b0b0")
+                color = style.get("color", EDGE_BASE_COLOR)
                 width_line = style.get("width", 2)
                 self.canvas.create_line(sx(u), sy(u), sx(v), sy(v), fill=color, width=width_line)
 
         radius = 16
         for node in range(n):
             cx, cy = sx(node), sy(node)
-            color = node_colors.get(node, "#6ea8ff")
-            self.canvas.create_oval(cx - radius, cy - radius, cx + radius, cy + radius, fill=color, outline="#3d3d3d")
+            color = node_colors.get(node, NODE_DEFAULT_COLOR)
+            self.canvas.create_oval(
+                cx - radius,
+                cy - radius,
+                cx + radius,
+                cy + radius,
+                fill=color,
+                outline=NODE_OUTLINE_COLOR,
+            )
             self.canvas.create_text(cx, cy, text=str(node + 1), fill="black", font=("TkDefaultFont", 10, "bold"))
             extra = extra_labels.get(node, "")
             if extra:
@@ -436,9 +450,8 @@ class TreeApp(tk.Tk):
             output_lines.append("max_depth_in_subtree: " + " ".join(str(d) for d in max_depth))
         elif algorithm == "centroid":
             parent, level = centroid_decomposition(adj, root)
-            palette = ["#6ea8ff", "#7dd87d", "#ffd56e", "#f7a572", "#d69bf8", "#7ad1e8"]
             for node in range(n):
-                node_colors[node] = palette[level[node] % len(palette)]
+                node_colors[node] = CENTROID_PALETTE[level[node] % len(CENTROID_PALETTE)]
                 extra_labels[node] = f"lvl {level[node]}"
             output_lines.append("Центроидная декомпозиция:")
             output_lines.append("centroid_parent: " + " ".join(str(p + 1 if p != -1 else 0) for p in parent))
@@ -452,7 +465,7 @@ class TreeApp(tk.Tk):
                 extra_labels[node] = f"h{head[node] + 1}"
             for node in range(n):
                 if heavy[node] != -1:
-                    edge_styles[frozenset((node, heavy[node]))] = {"color": "#f39c12", "width": 4}
+                    edge_styles[frozenset((node, heavy[node]))] = {"color": EDGE_HLD_HEAVY_COLOR, "width": 4}
             output_lines.append("Heavy-Light Decomposition:")
             output_lines.append("parent: " + " ".join(str(p + 1 if p != -1 else 0) for p in parent))
             output_lines.append("heavy_child: " + " ".join(str(h + 1 if h != -1 else 0) for h in heavy))
@@ -468,7 +481,7 @@ class TreeApp(tk.Tk):
 
 
 def main():
-    sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(10000)  # DFS-based algorithms can be deep on tall trees.
     app = TreeApp()
     app.mainloop()
 
