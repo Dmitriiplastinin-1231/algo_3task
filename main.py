@@ -8,7 +8,7 @@ from dfs_algorithm import min_time_collect_apples
 from dp_algorithm import tree_dp
 from hld_algorithm import heavy_light_decomposition
 
-MAX_RECURSION_DEPTH = 10000  # Python recursion call-depth limit; deep traversals may require higher values.
+MAX_RECURSION_DEPTH = 10000  # Python recursion call depth limit; deep traversals may require higher values.
 COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
 COLOR_SCALE_END = (255, 141, 82)
@@ -106,7 +106,12 @@ class TreeApp(tk.Tk):
         self.algorithm_var = tk.StringVar(value="dfs")
         algo_frame = ttk.Frame(control_frame)
         algo_frame.grid(row=6, column=0, columnspan=2, sticky="w")
-        ttk.Radiobutton(algo_frame, text="Полный обход DFS с возвратом", variable=self.algorithm_var, value="dfs").grid(
+        ttk.Radiobutton(
+            algo_frame,
+            text="DFS с возвратом (маршрут сбора яблок)",
+            variable=self.algorithm_var,
+            value="dfs",
+        ).grid(row=0, column=0, sticky="w")
             row=0, column=0, sticky="w"
         )
         ttk.Radiobutton(algo_frame, text="DP на дереве", variable=self.algorithm_var, value="dp").grid(
