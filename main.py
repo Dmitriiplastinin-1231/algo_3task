@@ -438,6 +438,7 @@ class TreeApp(tk.Tk):
         extra_labels = {}
         edge_styles = {}
         output_lines = []
+        timing_label = "Время выполнения"
 
         if algorithm == "dfs":
             start_time = time.perf_counter()
@@ -466,6 +467,7 @@ class TreeApp(tk.Tk):
             for node in range(n):
                 node_colors[node] = CENTROID_PALETTE[level[node] % len(CENTROID_PALETTE)]
             output_lines.append("Центроидная декомпозиция (сбор яблок):")
+            timing_label = "Время выполнения (декомпозиция + DP)"
         elif algorithm == "hld":
             start_time = time.perf_counter()
             _parent, heavy, head, _pos, _depth = heavy_light_decomposition(adj, root)
@@ -482,6 +484,7 @@ class TreeApp(tk.Tk):
                         frozenset((node, heavy[node])), {"color": EDGE_HLD_HEAVY_COLOR, "width": 4}
                     )
             output_lines.append("Heavy-Light Decomposition (сбор яблок):")
+            timing_label = "Время выполнения (HLD + DP)"
         else:
             messagebox.showerror("Ошибка", "Неизвестный алгоритм.")
             return
@@ -501,7 +504,7 @@ class TreeApp(tk.Tk):
         percent_display = int(len(apple_nodes) * 100 / n)
         output_lines.append(f"Яблок: {len(apple_nodes)} ({percent_display}%)")
         output_lines.append(f"Минимальное время: {total_time}")
-        output_lines.append(f"Время выполнения: {elapsed:.6f} сек")
+        output_lines.append(f"{timing_label}: {elapsed:.6f} сек")
         output_lines.append("Маршрут: " + " ".join(str(v + 1) for v in route))
         apple_list = sorted(node + 1 for node in apple_nodes)
         if len(apple_list) <= 20:
