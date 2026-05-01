@@ -3,6 +3,11 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from centroid_algorithm import centroid_decomposition
+from dfs_algorithm import min_time_collect_apples
+from dp_algorithm import tree_dp
+from hld_algorithm import heavy_light_decomposition
+
 MAX_RECURSION_DEPTH = 10000  # Python recursion call-depth limit; deep traversals may require higher values.
 COLOR_SCALE_MIDPOINT = 0.5
 COLOR_SCALE_START = (82, 148, 255)
@@ -18,155 +23,6 @@ MIN_SCALE_DIVISOR = 1.0
 APPLE_COLOR = "#e74c3c"
 ROOT_COLOR = "#2ecc71"
 OTHER_NODE_COLOR = "#c7d3e8"
-
-
-def dfs_with_return(adj, root):
-    n = len(adj)
-    tin = [0] * n
-    tout = [0] * n
-    timer = 0
-    tour = []
-
-    def dfs(node, parent):
-        nonlocal timer
-        timer += 1
-        tin[node] = timer
-        tour.append(node)
-        for nei in adj[node]:
-            if nei == parent:
-                continue
-            dfs(nei, node)
-            tour.append(node)
-        timer += 1
-        tout[node] = timer
-
-    dfs(root, -1)
-    return tin, tout, tour
-
-
-def tree_dp(adj, root, has_apple):
-    n = len(adj)
-    parent = [-1] * n
-    order = [root]
-    parent[root] = root
-    for node in order:
-        for nei in adj[node]:
-            if nei == parent[node]:
-                continue
-            parent[nei] = node
-            order.append(nei)
-
-    apple_count = [0] * n
-    edges_needed = set()
-    for node in reversed(order):
-        count = 1 if has_apple[node] else 0
-        for nei in adj[node]:
-            if nei == parent[node]:
-                continue
-            count += apple_count[nei]
-            if apple_count[nei] > 0:
-                edges_needed.add(frozenset((node, nei)))
-        apple_count[node] = count
-
-    return len(edges_needed) * 2, edges_needed, apple_count
-
-
-def centroid_decomposition(adj, start):
-    n = len(adj)
-    parent = [-1] * n
-    level = [0] * n
-    used = [False] * n
-    sizes = [0] * n
-
-    def calc_size(node, par):
-        sizes[node] = 1
-        for nei in adj[node]:
-            if nei == par or used[nei]:
-                continue
-            calc_size(nei, node)
-            sizes[node] += sizes[nei]
-
-    def find_centroid(node, par, total):
-        for nei in adj[node]:
-            if nei == par or used[nei]:
-                continue
-            if sizes[nei] > total // 2:
-                return find_centroid(nei, node, total)
-        return node
-
-    def build(node, par, depth):
-        calc_size(node, -1)
-        centroid = find_centroid(node, -1, sizes[node])
-        parent[centroid] = par
-        level[centroid] = depth
-        used[centroid] = True
-        for nei in adj[centroid]:
-            if used[nei]:
-                continue
-            build(nei, centroid, depth + 1)
-
-    build(start, -1, 0)
-    return parent, level
-
-
-def heavy_light_decomposition(adj, root):
-    n = len(adj)
-    parent = [-1] * n
-    depth = [0] * n
-    size = [1] * n
-    heavy = [-1] * n
-
-    def dfs(node, par):
-        max_size = 0
-        for nei in adj[node]:
-            if nei == par:
-                continue
-            parent[nei] = node
-            depth[nei] = depth[node] + 1
-            dfs(nei, node)
-            size[node] += size[nei]
-            if size[nei] > max_size:
-                max_size = size[nei]
-                heavy[node] = nei
-
-    dfs(root, -1)
-
-    head = [0] * n
-    pos = [0] * n
-    current_pos = 0
-
-    def decompose(node, h):
-        nonlocal current_pos
-        head[node] = h
-        pos[node] = current_pos
-        current_pos += 1
-        if heavy[node] != -1:
-            decompose(heavy[node], h)
-        for nei in adj[node]:
-            if nei == parent[node] or nei == heavy[node]:
-                continue
-            decompose(nei, nei)
-
-    decompose(root, root)
-    return parent, heavy, head, pos, depth
-
-
-def min_time_collect_apples(adj, root, has_apple):
-    edges_needed = set()
-
-    def dfs(node, parent):
-        contains = has_apple[node]
-        for nei in adj[node]:
-            if nei == parent:
-                continue
-            child_contains = dfs(nei, node)
-            if child_contains:
-                edges_needed.add(frozenset((node, nei)))
-                contains = True
-        return contains
-
-    dfs(root, -1)
-    return len(edges_needed) * 2, edges_needed
 
 
 def build_collect_route(adj, root, edges_needed):
